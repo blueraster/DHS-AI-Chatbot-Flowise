@@ -29,6 +29,9 @@ COPY packages/ui/package.json ./packages/ui/package.json
 # Copy server package.json
 COPY packages/server/package.json ./packages/server/package.json
 
+# Copy ENV file
+COPY .env .
+
 RUN yarn install
 
 # Copy app source

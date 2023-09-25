@@ -40,10 +40,10 @@ jobs:
         id: AWS
         uses: aws-actions/amazon-ecr-login@v1
 
-      #- name: Build, tag, and push image to Amazon ECR
-      #  id: build-image
-      #  run: |
-      #   echo "${{secrets.SEMCOG_STG_ENV}}" > .env
-      #    docker build -f Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-      #    docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-      #    echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        run: |
+         echo "${{secrets.DEVELOPMENT_ENV}}" > .env
+          docker build -f Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
