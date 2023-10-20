@@ -13,10 +13,10 @@ permissions:
 
 env:
   AWS_REGION: us-east-1 # set this to your preferred AWS region, e.g. us-west-1
-  AWS_ROLE_TO_ASSUME: arn:aws:iam::394820447336:role/Github-DHS-AI-Chatbot # set the role ARN for AWS authentication
+  AWS_ROLE_TO_ASSUME: arn:aws:iam::184419524470:role/Github-DHS-AI-Chatbot # set the role ARN for AWS authentication
   AWS_ROLE_SESSION_NAME: CICD # set the role session name used for AWS logging
   ECR_REPOSITORY: dhs-chatbot-flowise # set this to your Amazon ECR repository name
-  ECR_REGISTRY: 394820447336.dkr.ecr.us-east-1.amazonaws.com # set this to your Amazon ECR registry name
+  ECR_REGISTRY: 184419524470.dkr.ecr.us-east-1.amazonaws.com # set this to your Amazon ECR registry name
   IMAGE_TAG: ${{ github.sha }} # set the tag name for the docker image
 
 jobs:
