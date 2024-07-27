@@ -1,0 +1,48 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Build and Push to Amazon ECR
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1 # set this to your preferred AWS region, e.g. us-west-1
+  AWS_ROLE_TO_ASSUME: arn:aws:iam::394820447336:role/Github-DHS-AI-Chatbot # set the role ARN for AWS authentication
+  AWS_ROLE_SESSION_NAME: CICD # set the role session name used for AWS logging
+  ECR_REPOSITORY: dhs-chatbot-flowise # set this to your Amazon ECR repository name
+  ECR_REGISTRY: 394820447336.dkr.ecr.us-east-1.amazonaws.com # set this to your Amazon ECR registry name
+  IMAGE_TAG: ${{ github.sha }} # set the tag name for the docker image
+
+jobs:
+  build:
+    name: Build and Push Image
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3.4.0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2.0.0
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          role-session-name: ${{ env.AWS_ROLE_SESSION_NAME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: AWS
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        run: |
+          docker build -f ./docker/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
