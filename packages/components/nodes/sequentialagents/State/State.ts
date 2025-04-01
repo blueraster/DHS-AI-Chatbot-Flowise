@@ -1,8 +1,8 @@
 import { START } from '@langchain/langgraph'
+import { NodeVM } from '@flowiseai/nodevm'
+import { DataSource } from 'typeorm'
 import { ICommonObject, IDatabaseEntity, INode, INodeData, INodeParams, ISeqAgentNode } from '../../../src/Interface'
 import { availableDependencies, defaultAllowBuiltInDep, getVars, prepareSandboxVars } from '../../../src/utils'
-import { NodeVM } from 'vm2'
-import { DataSource } from 'typeorm'
 
 const defaultFunc = `{
     aggregate: {
@@ -34,21 +34,23 @@ class State_SeqAgents implements INode {
     icon: string
     category: string
     baseClasses: string[]
+    documentation?: string
     credential: INodeParams
     inputs: INodeParams[]
 
     constructor() {
         this.label = 'State'
         this.name = 'seqState'
-        this.version = 1.0
+        this.version = 2.0
         this.type = 'State'
         this.icon = 'state.svg'
         this.category = 'Sequential Agents'
         this.description = 'A centralized state object, updated by nodes in the graph, passing from one node to another'
         this.baseClasses = [this.type]
+        this.documentation = 'https://docs.flowiseai.com/using-flowise/agentflows/sequential-agents#id-3.-state-node'
         this.inputs = [
             {
-                label: 'State',
+                label: 'Custom State',
                 name: 'stateMemory',
                 type: 'tabs',
                 tabIdentifier: TAB_IDENTIFIER,
@@ -56,7 +58,7 @@ class State_SeqAgents implements INode {
                 default: 'stateMemoryUI',
                 tabs: [
                     {
-                        label: 'State (Table)',
+                        label: 'Custom State (Table)',
                         name: 'stateMemoryUI',
                         type: 'datagrid',
                         description:
@@ -80,7 +82,7 @@ class State_SeqAgents implements INode {
                         additionalParams: true
                     },
                     {
-                        label: 'State (Code)',
+                        label: 'Custom State (Code)',
                         name: 'stateMemoryCode',
                         type: 'code',
                         description: `JSON object representing the state`,
@@ -105,13 +107,15 @@ class State_SeqAgents implements INode {
 
         if (stateMemory && stateMemory !== 'stateMemoryUI' && stateMemory !== 'stateMemoryCode') {
             try {
+                const parsedSchemaFromUI = typeof stateMemoryUI === 'string' ? JSON.parse(stateMemoryUI) : stateMemoryUI
                 const parsedSchema = typeof stateMemory === 'string' ? JSON.parse(stateMemory) : stateMemory
+                const combinedMemorySchema = [...parsedSchemaFromUI, ...parsedSchema]
                 const obj: ICommonObject = {}
-                for (const sch of parsedSchema) {
-                    const key = sch.Key
+                for (const sch of combinedMemorySchema) {
+                    const key = sch.Key ?? sch.key
                     if (!key) throw new Error(`Key is required`)
-                    const type = sch.Operation
-                    const defaultValue = sch['Default Value']
+                    const type = sch.Operation ?? sch.type
+                    const defaultValue = sch['Default Value'] ?? sch.defaultValue
 
                     if (type === 'Append') {
                         obj[key] = {
@@ -194,7 +198,13 @@ class State_SeqAgents implements INode {
                 input
             }
 
-            let sandbox: any = {}
+            let sandbox: any = {
+                util: undefined,
+                Symbol: undefined,
+                child_process: undefined,
+                fs: undefined,
+                process: undefined
+            }
             sandbox['$vars'] = prepareSandboxVars(variables)
             sandbox['$flow'] = flow
 
@@ -210,7 +220,10 @@ class State_SeqAgents implements INode {
                 require: {
                     external: { modules: deps },
                     builtin: builtinDeps
-                }
+                },
+                eval: false,
+                wasm: false,
+                timeout: 10000
             } as any
 
             const vm = new NodeVM(nodeVMOptions)
